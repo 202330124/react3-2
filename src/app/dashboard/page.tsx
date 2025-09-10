@@ -1,0 +1,7 @@
+import Image from "next/image";
+
+export default function Dashboard() {
+  return (
+    <h1>This is Dashboard Page</h1>
+  );
+}
