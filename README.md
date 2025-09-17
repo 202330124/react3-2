@@ -1,5 +1,76 @@
 # 202330124 이태규
 
+## 25년 9월 17일 강의
+> 내용 정리
+
+**git checkout vs git switch 차이**
+<br/>
+
+- 그런데 왜 checkout은 그대로 남아있나?
+    - 파일 복원 등 이미 commit된 파일을 조작할 수 있기 때문입니다.
+    - 특히 git checkout [커밋 해시] 명령으로 특정 commit으로 이동할 수 있습니다.
+
+- 새 branch를 만드는 명령은 다음 3가지 입니다.
+- 단 <u>branch 명령은 이동할 수 없습니다</u>.
+- 또한 <u>switch와 checkout</u>은 branch를 만들기만 할 수는 없고, <u>만들고 바로 이동</u>합니다.
+
+- 참고로 branch 명령은 branch의 생성, 삭제, 확인 등을 할 때 사용합니다.
+- 이미 작성한 코드를 보전하고 싶을 때는 branch를 이용해 보세요.
+
+**1. Creating a page 페이지 만들기**
+- Next.js는 <u>파일 시스템 기반 라우팅</u>을 사용하기 때문에 <u>폴더와 파일을 사용하여 경로를 정의</u>할 수 있습니다.
+- 이번 장에서는 <u>레이아웃과 페이지를 만들고 서로 연결하는 방법</u>을 설명합니다.
+
+- page는 <u>특정 경로에서 렌더링되는 UI</u>입니다.
+- page를 생성하려면 <u>app 디렉터리에 page파일을 추가</u>하고, React 컴포넌트를 <u>default export</u>합니다. 예를 들어, 인덱스 page(/)를 생성하려면 다음과 같이합니다.
+
+**4. Nesting layouts(중첩 레이아웃)**
+- 기본적으로 폴더 계층 구조의 레이아웃도 중첩되어 있습니다.
+
+**5. Creating a dynamic segment(동적 세그먼트 만들기)**
+- 동적 세그먼트를 사용하면 데이터에서 생성된 경로를 만들 수 있습니다.
+- 예를 들어, 각 blog 게시물에 대한 경로를 직접 만드는 대신, 동적 세그먼트를 만들어 블로그 게시물 데이터를 기반으로 경로를 생성할 수 있습니다.
+- 동적 세그먼트를 생성하려면 세그먼트(폴더) 이름을 대괄호로 묶습니다. (예: [segmentName])
+
+**6. Rendering with search params(검색 매개변수를 사용한 렌더링)**
+- 서버 컴포넌트 page에서는 searchParams prop을 사용하여 검색 매개변수에 엑세스할 수 있습니다.
+- searchParams를 사용하면 해당 페이지는 동적 렌더링(dynamic rendering)으로 처리됩니다.
+- 왜냐하면 URL의 쿼리 파라미터(search parameter)를 읽기 위해 요청(request)이 필요하기 때문입니다.
+- 클라이언트 컴포넌트는 useSearchParams Hook을 사용하여 검색 매개변수를 읽을 수 있습니다.
+- 정적 렌더링과 동적 렌더링에서 useSearchParams를 사용하는 방법에 대해 자세히 알아 보세요.
+
+**searchParams란?**
+- URL의 쿼리 문자열(Query String)을 읽는 방법입니다.
+- 예시 URL: /products?category=shoes&page=2
+
+**문서의 코드를 복사하면 오류가 나옵니다.**
+- @/lib/posts와 @/ui/post를 작성하지 않았기 때문에 오류가 발생합니다.
+- 다음과 같이 수정해 주세요.
+    ```javascript
+    export default function Page() {
+        return (
+            <ul>
+                <li>Post 1</li>
+                <li>Post 2</li>
+                <li>Post 3</li>
+            </ul>
+        )
+    }
+    ```
+- 문서에서 별도의 library를 사용한 것은 <u>blog 폴더 하나에는 하나의 URL 세그먼트만 존재</u>하지만, <u>많은 양의 post를 각기 다른 주소로 호출하기 위한 동적 라우팅인 [slug]를 설명</u>하기 위해서 입니다.
+- 우선 blog의 page에서는 list를 바로 뿌려주고, [slug]는 dummy data를 이용해서 테스트 하겠습니다.
+
+**[slug]의 이해**
+- 코드 작성이 완료되면 /blog/[slug]로 접속해 봅니다.
+- 여기서 [slug]는 nextjs, routing, ssr-ssg, dynamic-routes에 해당합니다.
+
+- 동작은 정상적으로 되지만 한가지 오류가 발생합니다.
+- 이 오류는 Next.js App Router에서 <u>params가 비동기(async) 객체처럼 다뤄지는 경우 발생</u>합니다.
+- Next.js 14.2 이후로 params와 searchParams는 내부적으로 <u>Promise 기반 객체일 수</u> 있어서, 바로 쓰면 안되고 <u>await하거나 props의 구조 분해에서 미리 await해야</u> 합니다.
+- 현재 실습 중인 버전은 15.x 이기 때문에 오류가 발생하는 것입니다.
+
+<hr/>
+
 ## 25년 9월 10일 강의
 > 내용 정리
 
