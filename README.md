@@ -237,7 +237,22 @@ export default function Counter() {
 - 예를 들어, 다음 예제의 <Layout> component는 로고와 탐색 링크와 같은 정적 요소가 대부분이지만 대화형 검색창이 포함되어 있습니다.
 - <Search />는 대화형이기 때문에 client component가 되야 하지만, 나머지 layout은 server component로 유지될 수 있습니다.
 
+<br/>
 
+3-3. server에서 client component로 데이터 전달
+- props를 사용하면 server component에서 client component로 데이터를 전달할 수 있습니다.
+
+⚠️ 앞에서 작성한 PostPage(/[id]/page.tsx) server component는 line 28에서 client component인 LikeButton으로 like props를 전달하고 있는 것을 확인할 수 있습니다.
+
+- 다른 방법으로는 use Hook을 사용하여 server component에서 client component로 데이터를 스트리밍할 수도 있습니다. 예제를 참조하세요. #Fetching Data에서 소개합니다.
+
+💡 알아두면 좋은 정보: client component에 전달되는 Props는 React로 직렬화가 가능해야 합니다.
+<br/>
+
+⚠️ 직렬화(Serialization)란 무엇인가?
+- 일번적으로는 메모리에 있는 복잡한 데이터를 바이트의 연속 형태로 변환하는 과정을 말합니다.
+- 즉, 자바스크립트의 객체나 배열처럼 구조가 있는 데이터를 파일로 저장하거나, 네트워크로 전송하기 쉽게 만드는 과정입니다.
+- React나 Next.js 같은 프레임워크는 컴포넌트의 상태나 트리 구조를 서버에서 직렬화하여 클라이언트로 전송하고, 클라이언트에서 역직렬화 하는 과정을 자주 수행합니다.
 
 <hr/>
 
