@@ -1,5 +1,246 @@
 # 202330124 이태규
 
+## 25년 10월 17일 강의(보강)
+> 내용 정리
+
+**Introduction**
+<br/>
+
+- 기본적으로 layout과 page는 server component 입니다.
+- server에서 데이터를 가져와 UI의 일부를 렌더링할 수 있고, 선택적으로 결과를 cache한 후 client로 스트리밍할 수 있습니다.
+- 상호작용이나 브라우저 API가 필요한 경우 client component를 사용하여 기능을 계층화할 수 있습니다.
+- 이번 장에서는(5장) Next.js에서 server 및 client component가 작동되는 방식과 이를 사용하는 시기를 설명하고, 애플리케이션에서 이 컴포넌트를 사용하는 방법에 대한 예제를 소개합니다.
+
+**1. server 및 client component를 언제 사용해야 되나요?**
+<br/>
+
+- client 환경과 server 환경은 서로 다른 기능을 가지고 있습니다.
+- server 및 client component를 사용하면 사용하는 사례에 따라 각각의 환경에서 필요한 로직을 실행할 수 있습니다.
+- 다음과 같은 항목이 필요한 경우에는 client component를 사용합니다.
+    - state 및 event handler | 예) onClick, onChange
+    - Lifecycle logic | 예) useEffect
+    - 브라우저 전용 API | 예) localStorage, window, Navigator, geolocation 등
+    - 사용자 정의 Hook
+
+- 다음과 같은 항목이 필요한 경우에는 server component를 사용합니다.
+    - 서버의 데이터베이스 혹은 API에서 data를 가져오는 경우 사용합니다.
+    - API key, token 및 기타 보안 데이터를 client에 노출하지 않고 사용합니다.
+    - 브라우저로 전송되는 JavaScript의 양을 줄이고 싶을 때 사용합니다.
+    - 콘텐츠가 포함된 첫 번째 페인트(First Contentful Paint-FCP)를 개선하고, 콘텐츠를 client에 점진적으로 스트리밍합니다.
+
+<br/>
+
+- 예를 들어, <Page> component는 게시물에 대한 데이터를 가져와서, client 측 상호 작용을 처리하는 <LinkButton>에 props로 전달하는 server component 입니다.
+    - ⚠️ 그리고, @/ui/like-button은 client component이기 때문에 use client를 사용하고 있습니다.
+
+```javascript
+import LikeButton from '@/app/ui/like-button'
+import { getPost } from '@/lib/data'
+
+export default async function Page({ param }: { params: { id: string } }) {
+    const post = await getPost(params.id)
+
+    return (
+        <div>
+            <main>
+                <h1>{ post.title }</h1>
+                { /* ... */ }
+                <LikeButton likes = { post.likes } />
+            </main>
+        </div>
+    );
+}
+```
+
+```javascript
+'use client'
+
+import { useState } from 'react'
+
+export default function LikeButton({ likes }: { likes: number }) {
+    // ...
+}
+```
+
+**문서의 코드를 완성해봅시다. slug page**
+<br/>
+
+- 완성된 코드는 다음과 같습니다.
+- getPost 컴포넌트는 별도로 구현하지 않고, 슬러그에 포함된 id 값을 비교해서 직접 가져옵니다.
+
+```javascript
+import LikeButton from '@/ui/like-button'
+// 문서의 import { getPost } from '@/lib/data' 대신 데이터만 직접 가져옵니다.
+import { posts } from '@/lib/data'
+import { notFound } from 'next/navigation'
+
+// 문서에서는 다음 구문을 풀어서 작성했지만 한 줄로 하는 것이 더 명확해 보입니다.
+// export default async function PostPage({ params }: { params: Pormise<{ id: string }> }) { ... }
+
+export default async function PostPage({
+    params
+}: {
+    params: Promise<{ id: string }>
+}) {
+    const { id } = await params;
+
+    // posts에서 슬러그에 해당하는 포스트를 찾습니다.
+    // getPost 대신 직접 posts 배열에서 찾습니다.
+    const post = posts.find((p) => p.id === id);
+
+    if(!post) {
+        notFound();
+    }
+
+    return (
+        <div>
+            <main>
+                <h1>{ post.title }</h1>
+                { /* ... */ }
+                <LikeButton likes = { post.likes } />
+            </main>
+        </div>
+    )
+}
+```
+
+**문서의 코드를 완성해봅시다. LikeButton 컴포넌트**
+<br/>
+
+```javascript
+'use client'
+
+import { useState } from 'react'
+
+export default function LikeButton({ likes }: { likes: number }) {
+    // Optimistic Updates(낙관적 업데이트)
+    // 클라이언트 전용 컴포넌트 - 초기 likes 값을 받아 로컬에서 즉시 반영합니다.
+    // 서버에 저장하지 않고, 단순히 UI 상에서 좋아요 수를 증가시키는 역할을 합니다.
+    
+    const [count, setCount] = useState<number>(likes ?? 0)
+    const [isLiking, setIsLiking] = useState(false)
+
+    const handleClick = async() => {
+        // 낙관적 업데이트
+        setIsLiking(true)
+        setCount((c) => c + 1)
+
+        // 실제 저장 로직(API 호출 등)이 있다면 이곳에서 호출할 수 있습니다.
+        // 예: await fetch('/api/likes', { methos: 'POST', body: JSON.stringify({ id }) })
+
+        // 예제에서는 짧은 지연 후 버튼 상태만 해제합니다.
+        setTimeout(() => setIsLiking(false), 300)
+    }
+
+    return (
+        <button onClick={ handleClick } disabled={ isLiking } aria-pressed={ false }>
+            { count }
+        </button>
+    )
+}
+```
+
+**문서의 코드를 완성해 봅시다. Optimistic Update**
+<br/>
+
+[Optimistic Update(낙관적 업데이트)]
+- 사용자에 의해서 이벤트(예: 좋아요 버튼 클릭)가 발생하면, 서버 응답을 기다리지 않고 클라이언트(브라우저)의 UI를 즉시 변경(업데이트)합니다.
+- 서버에 보낸 요청의 성공을 낙관(optimistic)한다고 가정해서 먼저 화면에 변화를 보여 줍니다.
+- 서버에서 응답이 없으면, UI를 원래 상태로 되돌립니다.(rollback)
+- 네트워크 지연 동안에도 앱이 "빠르게 반응"하도록 느끼게 하는 것이 목적입니다.
+
+**문서의 코드를 완성해 봅시다. Pessimistic Update**
+<br/>
+
+[Pessimistic Update(비관적 업데이트)]
+- 이벤트가 발생하면 먼저 서버에 요청을 보내고, 서버에서 성공 응답을 받은 후에 클라이언트의 UI를 업데이트 합니다.
+
+(장점)
+- 서버의 응답을 기반으로 하기 때문에 데이터의 일관성이 보장됩니다.
+- 오류가 발생할 가능성이 낮고, 잘못된 정보가 표시될 염려가 없습니다.
+
+(단점)
+- 사용자는 서버의 응답을 기다려야 하므로
+
+**2. Next.js에서 server와 client component는 어떻게 작동합니까?**
+<br/>
+
+2-1. server component의 작동
+- server에서 Next.js는 React의 API를 사용하여 렌더링을 조정합니다
+
+<br/>
+
+RSC 페이로드에는 다음 내용이 포함됩니다.
+- server component의 렌더링 결과
+- client component가 렌더링될 위치 및 해당 JavaScript 파일 참조를 위한 자리 표시자(Placeholder)
+- server component에서 client component로 전달되는 모든 props
+
+2-2. client component의 작동(첫 번째 load)
+1. HTML은 사용자에게 경로(라우팅 페이지)의 비대화형 미리보기를 즉시 보여주는데 사용됩니다.
+2. RSC 페이로드는 client와 server component 트리를 조정하는데 사용됩니다.
+3. JavaScript는 client component를 hydration하고, 애플리케이션을 대화형으로 만드는데 사용됩니다.
+
+⚠️ Hydration이란 무엇인가?
+- Hydration은 이벤트 핸들러를 DOM에 연결하여 정적 HTML을 인터렉티브하게 만드는 React의 프로세스입니다.
+
+<br/>
+
+2-3. 후속 네비게이션
+후속 탐색을 할 때:
+- RSC 페이로드는 즉시 탐색할 수 있도록 prefetch 및 cache 됩니다.
+- client component는 server에서 렌더링된 HTML 없이 전적으로 client에서 렌더링됩니다.
+
+**3. Example**
+<br/>
+
+3-1. client component 사용
+- 파일의 맨 위, 즉 import문 위에 'use client' 지시문을 추가하여 client component를 생성할 수 있습니다.
+- 'use client'는 server와 client 모듈 트리 사이의 경계를 선언하는데 사용됩니다.
+- 파일에 'use client'로 표시되면 해당 파일의 모든 import와 자식 component는 client 번들의 일부로 간주됩니다.
+- 즉, client를 대상으로 하는 모든 component에 이 지시문을 추가할 필요가 없습니다.
+<br/>
+
+⚠️ 문서의 코드는 /api/ui/counter.tsx를 작성했지만, src 디렉토리를 사용하는 경우는 다음과 같이 관리하는 것이 일반적입니다.
+- src/app/ 아래에는 라우팅페이지만 작성하고 관리합니다.
+- 기타 사용자 정의 component나 library는 src/ 아래에 작성하고 관리합니다.
+
+⚠️ [실습1] 따라서 이번 실습 코드는 src/components 디렉토리를 만들고 Counter 컴포넌트를 작성합니다.
+```javascript
+'use client'
+
+import { useState } from 'react'
+
+export default function Counter() {
+    const [count, setCount] = useState(0)
+
+    return (
+        <div>
+            <p>{ count } likes</p>
+            <button onClick={ () => setCount(count + 1) }>Click me</button>
+        </div>
+    )
+}
+```
+
+- Counter 컴포넌트를 작성하는 이유는 사용할 목적이 있기 때문입니다. 다음은 대표적인 컴포넌트의 사용 목적입니다.
+    - 다른 컴포넌트의 완성을 위해 사용합니다.
+    - 라우팅 페이지에서 렌더링을 위해 사용합니다.
+
+⚠️ [실습2] 라우팅 페이지를 만들고, Counter 컴포넌트를 호출할 수 있도록 작성합니다.
+⚠️ [실습3] 테스트의 편의를 위해 앞서 실습한 slug page(like-button) 및 counter page의 링크를 모든 라우팅 페이지에서 확인할 수 있도록 코드를 작성합니다.
+
+<br/>
+
+3-2. JS bundle 크기 줄이기
+- client JavaScript 번들의 크기를 줄이려면 UI의 큰 부분을 client component로 표시하는 대신 특정 대화형 component에 'use client'를 추가합니다.
+
+- 예를 들어, 다음 예제의 <Layout> component는 로고와 탐색 링크와 같은 정적 요소가 대부분이지만 대화형 검색창이 포함되어 있습니다.
+- <Search />는 대화형이기 때문에 client component가 되야 하지만, 나머지 layout은 server component로 유지될 수 있습니다.
+
+
+
+<hr/>
+
 ## 25년 10월 1일 강의
 > 내용 정리
 
