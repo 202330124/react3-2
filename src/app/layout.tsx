@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import ThemeProvider from "./components/theme-provider";
+import ThemeStatus from "./components/theme-status";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -24,24 +26,28 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>
-        <header>
-          <p>=== Root Layout Header ===</p>
-          <nav>
-            <Link href="/">Home</Link> | <Link href="/counter">Counter</Link><br/><br/>
-            Slug Page Menu: &nbsp;
-            <Link href="/nextjs">nextjs</Link>&nbsp; | &nbsp;
-            <Link href="/routing">routing</Link>&nbsp; | &nbsp;
-            <Link href="/ssr-ssg">ssr-ssg</Link>&nbsp; | &nbsp;
-            <Link href="/dynamic-routes">dynamic-routes</Link>&nbsp; | &nbsp;
-          </nav>
-        </header>
-        <main>
-          {children}
-        </main>
-        <footer>=== Root Layout Footer ===</footer>
-      </body>
-    </html>
+    <ThemeProvider>
+      <html lang="en">
+        <body>
+          <header>
+            <p>=== Root Layout Header ===</p>
+            <nav>
+              <Link href="/">Home</Link> | <Link href="/counter">Counter</Link><br/><br/>
+              Slug Page Menu: &nbsp;
+              <Link href="/nextjs">nextjs</Link>&nbsp; | &nbsp;
+              <Link href="/routing">routing</Link>&nbsp; | &nbsp;
+              <Link href="/ssr-ssg">ssr-ssg</Link>&nbsp; | &nbsp;
+              <Link href="/dynamic-routes">dynamic-routes</Link>&nbsp; | &nbsp;
+              # interleaving 예제: <Link href="/interleaved">interleaving 예제</Link>
+            </nav>
+            <ThemeStatus />
+          </header>
+          <main>
+            {children}
+          </main>
+          <footer>=== Root Layout Footer ===</footer>
+        </body>
+      </html>
+    </ThemeProvider>
   );
 }
