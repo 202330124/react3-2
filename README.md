@@ -1,5 +1,107 @@
 # 202330124 이태규
 
+## 25년 10월 29일 강의
+> 내용 정리
+
+**Context provider의 실행 과정 리뷰**
+1. Context 생성 (theme-provider.tsx)
+    - createContext(...)로 Context 객체를 만듭니다.
+    - : 초기값(default value)은 provider가 없을 때 사용할 fallback값 입니다. (여기선 theme: 'light', toggleTheme: () => {}).
+    - 이 파일 내부에서 ThemeProvider 컴포넌트를 정의합니다.
+    - useState로 theme 상태를 관리(예: 'light' 'dark').
+    - toggleTheme 함수는 setTheme 을 호출해 상태를 변경.
+    - useEffect로 상태 변경 시 document.documentElement.dataset.theme에 값을 기록. (전역 스타일 적용 용도)
+    - ThemeContext.Provider에 value={{ theme, toggleTheme }}를 넣고 children을 감싸 줍니다.
+    - [요약] 상태(state)와 상태를 바꾸는 함수(toggle)를 만든 뒤 Provider의 value로 내려 줍니다. 상태는 Provider 내부에 보관됩니다.
+
+2. Provider 배치 (RootLayout)
+    - RootLayout에서 Theme Provider로 루트(또는 필요한 하위 트리)를 감싸줍니다.
+    - ex) <ThemeProvider><html>...{children}...</html> </ThemeProvider>
+    - 이렇게 하면 Provider 하위에 렌더링 되는 모든 컴포넌트들이 ThemeContext에 접근할 수 있다.
+    - children은 RootLayout으로 전달된 자식 컴포넌트들을 의미하고, Provider가 그들을 감 싸므로 자식들이 Context에 접근 가능해 지게 됩니다.
+
+3. Consumer 사용 (theme-status.tsx)
+    - ThemeStatus는 'use client'로 클라이언트 컴포넌트이며, useContext(ThemeContext)를 사용해 value를 읽어 들입니다.
+    - : const { theme, toggleTheme } = useContext (ThemeContext)
+    - UI에서는 theme 값을 표시하고, 버튼 클릭 시 toggleTheme()을 호출 합니다.
+
+💡 동작 순서(버튼 클릭 시 흐름)
+1. 사용자가 ThemeStatus의 버튼 클릭.
+2. toggleTheme() 호출. (ThemeStatus가 Provider의 함수를 호출)
+3. Provider 내부의 setTheme이 실행되어 theme 상태가 변경.
+4. 상태 변경으로 Provider와 그 하위 컴포넌트들이 리렌더링되어 theme 값이 최신으로 반영됨.
+5. useEffect가 실행되어 document.documentElement.dataset. theme 값도 갱신. (글로벌 스타일 반영)
+
+
+**Context provider 순서도 형식으로 정리**
+<br/>
+⚠️ Theme Context의 동작 흐름을 순서도 형식으로 정리한 것입니다. 각 단계에 대응하는 파일/위치를 괄호 안에 표기했습니다.
+
+1. 앱 시작 / RootLayout 렌더
+    - RootLayout이 렌더되고 ThemeProvider로 children을 감쌈. (파일: layout.tsx→ ThemeProvider 사용)
+    
+2. Context 생성 (초기화)
+    - ThemeContext = createContext(...)가 정의되어 있음(기본값 제공). (파일: src/components/theme-provider.tsx)
+
+3. Provider 인스턴스 생성
+    - Theme Provider 컴포넌트가 실행되어 내부 state(theme, setTheme) 생성(useState).
+    - Provider의 value={ theme, toggleTheme }로 설정. (파일: src/components/theme-provider.tsx)
+
+4. 하위 트리 렌더링
+    - Provider로 감싼 children(페이지/컴포넌트)이 렌더됨. 이 하위 트리는 Context에 접근 가능. (파일: layout.tsx → children)
+
+5. Consumer 사용: ThemeStatus 렌더
+    - ThemeStatus가 렌더되어 useContext(ThemeContext)로 { theme, toggleTheme }를 가져옴. (파일: src/components/theme-status.tsx)
+
+6. 사용자 상호작용: 버튼 클릭
+    - 사용자가 ThemeStatus의 버튼을 클릭하면 toggleTheme() 호출. (파일: theme-status.tsx 클릭→ Theme Provider의 toggleTheme 실행)
+
+7. 상태 변경 내부 처리
+    - ThemeProvider의 toggleTheme가 setTheme을 호출하여 theme 상태를 변경(예: 'light' → 'dark'). (파일: theme-provider.tsx)
+
+8. 부수효과 실행 (useEffect)
+    - theme 변경으로 Theme Provider의 useEffect가 실행되어, document.documentElement.dataset.theme = theme 로 설정. (파일: theme-provider.tsx useEffect)
+
+9. 리렌더링 전파
+    - state 변경으로 Provider와 그 하위 Consumer들이 최신 value를 받아 리렌더링됨.
+    - ThemeStatus는 새 theme 값을 받아 UI(아이콘/텍스트)를 갱신함.
+
+10. 결과: 레이아웃/스타일 반영
+<br/>
+
+⚠️ data-theme 속성 변경을 바탕으로 CSS([data-theme="dark"] 등)가 적용되면 실제 시각적 테마 변경이 화면에 반영됨. (파일: 전역 CSS 또는 별도 스타일 파일)
+<br/>
+
+3-6. 외부(서드 파티) component
+⚠️ 실습은 뒤에서 합니다. 여기서는 이론에만 집중해 주세요.
+- client 전용 기능에 의존하는 외부 component를 사용하는 경우, 해당 component를
+- client component에 래핑하여 예상대로 작동하는지 확인할 수 있습니다.
+- 예를 들어, <Carousel >은 acme-carousel 패키지에서 를 가져올 수 있습니다.
+- 이 component는 useState를 사용하지만 “use client” 지시문은 없습니다.<br/>
+⚠️ “use client” 지시문 없이 어떻게 사용할 수 있을까요?
+- client component 내에서 <Carousel >을 사용하면 예상대로 작동합니다.
+
+**외부(서드 파티) component 실습**
+<br/>
+
+⚠️ acme-carousel의 주요 옵션 및 기능은 다음과 같습니다.
+- 자동 전환(autoplay)
+- 반응형(responsive)
+- 지원터치/스와이프 제어(touch/swipe)
+- 가상화(virtualization) 및 지연 로딩(lazy loading)
+- 접근성(accessibility) 기능
+- 고급 애니메이션 및 3D 효과 등
+<br/>
+💡 자세한 설명은 https://www.npmjs.com/package/acme-carousel 에서 확인할 수 있습니다.<br/>
+💡 Autoplay Carousel을 적용하려면 어떻게 해야 하는지 확인해 보세요.<br/>
+
+3-7. 환경 변수 노출 예방
+- JavaScript 모듈은 server 및 client component 모듈 간에 공유될 수 있습니다.
+- 이 말의 의미는 실수로 server 전용 코드를 client로 가져올 수도 있습니다.
+- 예를 들어 다음 함수를 살펴보겠습니다.
+
+<hr/>
+
 ## 25년 10월 22일 강의
 > 내용 정리
 
