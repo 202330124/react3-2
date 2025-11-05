@@ -1,5 +1,164 @@
 # 202330124 이태규
 
+## 25년 11월 5일 강의
+> 내용 정리
+
+**1. 데이터 가져오기(Fetching Data)**
+<br>
+
+[알아두면 좋은 정보]
+- fetch 응답은 기본적으로 캐싱되지 않습니다.
+- 그러나 Next.js는 라우팅 페이지를 미리 렌더링하고, 성능 향상을 위해 출력은 캐싱됩니다.
+- 동적 렌더링을 사용하려면 { cache: 'no-store' } 옵션을 사용합니다. ⚠️ fetch API 참고
+- 개발 중에는 가시성과 디버깅을 개선하기 위해 fetch 호출을 기록할 수 있습니다. ⚠️ logging API 참고
+<br>
+
+[2. ORM 또는 데이터베이스를 사용]
+- 서버 컴포넌트는 서버에서 렌더링 되기 때문에 ORM이나 데이터베이스 클라이언트를 사용해서 안전하게 데이터베이스 쿼리를 실행할 수 있습니다.
+- 컴포넌트를 비동기 함수로 변환하고 호출을 기다리면 됩니다.
+
+**1-2. 클라이언트 컴포넌트**
+<br>
+
+1-2. 클라이언트 컴포넌트
+- 클라이언트 컴포넌트에서 데이터를 fetch하는 방법은 두가지가 있습니다.
+    1. React의 use Hook
+    2. SWR 또는 React 쿼리와 같은 통신 라이브러리
+
+[1. use Hook을 사용한 스트리밍 데이터]
+- React의 use Hook을 사용하여 서버에서 클라이언트로 데이터를 스트리밍합니다.
+- 서버 컴포넌트에서 데이터를 먼저 fetch하고, 그 결과(promise)를 클라이언트 컴포넌트에 prop으로 전달합니다.
+- ⚠️ 서버 컴포넌트는 async가 가능하기 때문에 await fetch()도 사용 가능합니다.
+- ⚠️ 하지만 클라이언트 컴포넌트에서는 async가 불가능하기 때문에 직접 fetch가 불가능합니다. (렌더링 중 fetch 금지)
+
+**Fetch의 이해**
+<br/>
+
+- 실습한 코드에서 fetch(url).then((res) => res.json()) 이라는 부분이 있습니다.
+- 이 부분에 대해서 좀 더 이해하고 넘어가도록 하겠습니다.
+
+fetch(url)
+- fetch() 함수는 브라우저의 Fetch API로, HTTP 요청을 보낼 때 사용합니다.
+- 기본적으로 GET 방식으로 요청을 수행합니다.
+- 첫 번째 인자로 요청(request)할 URL, 두 번째 인자로 요청 옵션을 전달합니다.
+- 옵션은 method, headers, body 등이 있습니다.
+- Promise<Response> 객체를 반환합니다.
+- 응답이 도착하면 then()을 통해 결과를 처리합니다.
+- HTTP 상태 코드가 4xx / 5xx 이어도 Promise는 reject(오류)되지 않습니다.
+- 네트워크 에러(통신 오류)가 아니라면 무조건 resolve가 됩니다. 
+- 따라서 404, 500 등의 오류를 처리하려면 예외처리가 별도로 필요합니다.
+<br/>
+
+1. Promise의 기본 구조
+    - new Promise()를 호출하면 Promise 객체가 생성됩니다.
+    - 생성자의 인자로 callback 함수가 들어가는데, 이 call back은 두 개의 매개변수를 받습니다.
+        - resolve: 작업이 성공했을 때 호출하는 함수
+        - reject: 작업이 실패했을 때 호출하는 함수
+
+2. resolve()의 기능
+    - resolve(value)는 Promise의 상태를 "fullfilled(이행됨)"으로 바꾸고, 그 값(value)을 .then()으로 전달합니다.
+    - 예에서는 resolve('완료'!)를 호출한 순간, promise의 상태는 "fullfilled"로 바뀌고 result로 '완료!'가 전달됩니다.
+
+3. 자주 혼동하는 부분
+    - resolve는 Promise 안에서 자동으로 전달되는 함수입니다.
+    - 직접 정의하는 게 아니라 new Promise 내부 callback의 첫번째 매개변수로 주어집니다.
+    - 다음 코드는 잘못된 예시를 보여줍니다.
+
+4. 이미 존재하는 Promise를 resolve하는 경우
+    - 경우에 따라서 새 Promise를 만들지 않고, 이미 존재하는 값을 "즉시 이행된 Promise"로 감싸고 싶을 때가 있습니다.
+    - 이런 경우 Promise.resolve()를 사용합니다.
+    - 이것은 new Promise((resolve) => resolve('이미 완료된 값'))와 같은 의미입니다.
+<br/>
+
+💡 .then((res) => ...)
+- fetch()가 반환한 Promise 객체가 then() 메서드를 가지고 있습니다.
+- Promise 객체가 resolve(성공)되면 .then()의 callback 함수가 실행됩니다.
+- 여기서 res는 서버에서 반환된 Promise 객체입니다.
+- Promise 객체는 status, header, body 등 HTTP 응답 전체를 포함합니다.
+<br/>
+
+💡 res.json()
+- res.json()은 이 Response 객체의 본문(body)을 JSON으로 파싱하는 비동기 함수입니다.
+- 내부적으로 문자열 형태의 Response body를 읽고, JSON.parse()를 수행하여 자바스크립트 객체로 변환합니다.
+- 이 함수로 Promise를 반환하기 때문에 다시 then() 체이닝을 통해 파싱된 데이터를 사용할 수 있습니다.
+- 파싱이 완료되면 resolve(성공)되고, 파싱에 실패(유효하지 않은 JSON)하면 reject(거부)됩니다.
+<br/>
+
+**Suspense Component란 무엇인가?**
+- 비동기 작업 중에 UI의 일부를 일시적으로 대체 UI(fallback)로 보여주어 사용자 경험을 향상시키는 React 기능입니다. (예: 데이터 로딩, 컴포넌트 동적 임포트)
+<br/>
+
+[Suspense의 핵심 기능]
+- 비동기 작업이 완료될 때까지 해당 컴포넌트 트리 렌더링을 일시 중지합니다.
+- 작업이 완료되면 실제 UI로 자동 전환합니다.
+- 비동기 로딩 중 보여줄 fallback UI(로딩 인디케이터 등)를 지정할 수 있습니다.
+- import 하여 사용합니다. ```import { Suspense } from 'react'```
+
+- Suspense 내부에 여러 개의 컴포넌트가 있을 경우, 내부 컴포넌트 중 하나라도 로딩 중이면 fallback UI가 표시되고, 모든 작업이 완료되면 한번에 실제 UI가 노출됩니다.
+- 이 기능을 활용하면 여러 비동기 컴포넌트를 독립적으로 대기하거나, 병렬 로딩 상태를 효과적으로 관리할 수 있습니다.
+
+**Promise<...>란 무엇인가?**
+<br/>
+
+- Next.js 15.1부터 주요 내부 API들이 비동기(Promise 기반) 구조로 변경되었습니다.
+- 내부 API(예: params, searchParams, headers, cookies)가 즉시 사용 가능한 값이 아니라 비동기적으로 처리되며 Promise를 반환하게 됩니다.
+- 즉 Promise<...>는 비동기 연산의 결과를 나타내는 객체 타입으로, 연산이 즉시 완료되지 않고 미래의 어느 시점에서 결과가 결정될 때 이를 표현한다는 의미입니다.
+- Promise<{ id: string }>는 미래에 { id: string } 객체를 반환하겠다는 약속입니다.
+- 즉, 서버 컴포넌트로부터 Promise<{ id: string }> 객체를 받았다면, 클라이언트 컴포넌트에서는 use Hook을 사용해서 개별 데이터에 접근합니다.
+
+**서버 컴포넌트에서 getPosts() 함수를 사용**
+<br/>
+
+[데이터의 전체적인 흐름]
+1. blog에 접속하면 getPosts 라이브러리를 호출하여 fetch 정보를 전달 합니다.
+2. getPosts는 받은 정보를 이용하여 fetch 데이터를 가져온 후 json 형태로 blog에 return 합니다.
+3. blog는 getPosts로부터 받은 데이터를 Posts 컴포넌트에 props로 전달합니다.
+4. 이때 blog는 Posts로부터 데이터를 받을 때까지 Suspense로 fallback UI를 실행합니다.
+5. Posts 컴포넌트는 받은 props를 use Hook을 사용하여 데이터를 저장합니다.
+6. 저장된 데이터는 map 함수를 사용하여 list를 만들고 그 결과를 blog로 return 합니다.
+7. list를 받으면 blog는 fallback UI 실행을 중지하고 즉시 list를 렌더링합니다.
+<br/>
+
+**1-4. 커뮤니티 라이브러리(서드파티(third-party) 라이브러리 및 도구)**
+<br/>
+
+- 클라이언트 컴포넌트의 fetch data는 SWR 또는 React Query와 같은 커뮤니티 라이브러리를 사용할 수 있습니다.
+    - SWR(Stale-While-Revalidate): Vercel에서 만든 라이브러리로, 먼저 캐시된(stale / 오래된) 데이터를 빠르게 보여준 후, 백그라운드에서 최신 데이터(revalidate)를 다시 가져옵니다. 그리고 최신 데이터가 도착하면 자동으로 화면을 업데이트합니다.
+
+- 이런 라이브러리는 캐싱, 스트리밍 및 기타 기능에 대한 자체적인 의미(semantics)를 가지고 있습니다. 예를 들어 SWR을 사용한 예제는 다음과 같습니다.
+<br/>
+
+**제네릭(T)을 사용하여 반환 값의 타입을 명시적으로 지정**
+<br/>
+
+- 이 경우 반환 타입을 타입스크립트가 추론합니다. fetch(url).then((r) => r.json())의 결과는 일반적으로 Promise<any> 또는 Promise<unknown>로 추론됩니다.
+- 문제는 any나 unknown으로 추론될 경우, 이 함수를 사용하는 쪽에서는 데이터의 실제 구조(r.name, r.id 등)를 알 수 없기 때문에, 사용할 때마다 타입을 명시하거나 별도의 타입 가드를 사용해야 합니다.
+- 결과적으로 타입 안정성이 낮아져 런타임 오류의 가능성이 높아집니다.
+- 이를 해결하기 위해서 TypeScript에서는 Generic을 제공합니다.
+<br/>
+
+**2. 중복된 요청 제거 및 데이터 캐시**
+<br/>
+
+- 중복된 fetch 요청을 제거하는 한가지 방법은 요청 메모이제이션(request memoization)을 사용하는 것입니다.
+    - ⚠️ 즉, 같은 데이터를 여러번 요청하지 않게 하려면, '요청 메모이제이션(request memoization)'을 사용할 수 있다는 의미입니다.
+- 이 메커니즘(요청 메모이제이션)을 사용하면, 하나의 렌더링 과정(single render pass) 안에서 같은 URL과 옵션을 가진 GET 또는 HEAD 방식의 fetch 호출들은 하나의 요청으로 결합된다.
+    - ⚠️ 즉, 렌더링 중에 같은 주소와 설정으로 여러번 fetch()를 호출하더라도, Next.js는 그런것들을 하나의 네트워크 요청으로 통합해서 처리한다는 의미입니다.
+- 이 작업은 자동으로 수행되며, fetch에서 Abort 신호를 전달하여 작업을 취소(opt out)할 수 있습니다.
+- 요청 메모이제이션은 요청의 수명에 따라 범위가 지정됩니다.
+- Next.js의 데이터 캐시를 사용하여 fetch 중복을 제거할 수도 있습니다. 예를 들어, fetch 옵션에서 cache: 'force-cache'를 설정합니다.
+- 데이터 캐시를 사용하면 현재 렌더 패스와 수신 요청에서 데이터를 공유할 수 있습니다.
+- ⚠️ 예제의 테스트를 정상적으로 테스트하기 위해서는 2가지 패키지가 필요합니다.
+    - Drizzle-orm: SQL 데이터베이스를 위한 TypeScript 기반 ORM
+    - better-sqlite3: Node.js 환경에서 SQLite 기반
+
+**3. 스트리밍**
+<br/>
+
+- 경고(Warning): 아래
+
+<hr/>
+
 ## 25년 10월 29일 강의
 > 내용 정리
 
