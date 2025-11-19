@@ -1,5 +1,71 @@
 # 202330124 이태규
 
+## 25년 11월 19일 강의
+> 내용 정리
+
+**1. Tailwind CSS**
+<br/>
+
+- Tailwind CSS는 사용자 정의 디자인을 구축하기 위한 저수준 유틸리티 클래스를 제공하는 유틸리티 우선 CSS 프레임워크입니다.
+- Tailwind CSS 설치:
+    ```js
+    npm install -D tailwindcss @tailwindcss/postcss
+    ```
+- postcss.config.mjs 파일에 PostCSS 플러그인을 추가합니다.
+    ```js
+    export default {
+        plugins: {
+            '@tailwindcss/postcss': {},
+        },
+    }
+    ```
+- 전역 CSS 파일에서 Tailwind 가져오기:
+    ```css
+    @import 'tailwindcss';
+    ```
+<br/>
+
+**3. Global(전역) CSS**
+<br/>
+
+- 전역 CSS를 사용하여 응용 프로그램 전체에 스타일을 적용할 수 있습니다.
+- app/global.css 파일을 만들고 루트 레이아웃을 가져와 애플리케이션의 모든 경로에 스타일을 적용합니다.
+⚠️ RootLayout은 앞에서 작성한 것과 동일합니다.
+⚠️ global.css만 수정해보세요.
+
+⚠️ 정리하면 다음과 같습니다.
+1. 전역적으로 한번만 적용되어야하는 스타일은 global.css에 선언해서 사용합니다. 예를 들어 Tailwind의 기본 스타일(tailwindcss)을 global에 import합니다.
+2. 대부분의 컴포넌트 스타일은 Tailwind로 처리합니다.
+3. Tailwind로 처리하기 어려운 특정 컴포넌트에 한해서 CSS Modules로 커스텀 스타일을 만들어 사용합니다.
+<br/>
+
+**4. 외부 스타일시트**
+<br/>
+
+- 외부 패키지로 제공되는 스타일시트는 app 디렉토리의 컴포넌트를 포함하여, 어느 곳에 서나 import해서 사용할 수 있습니다.
+⚠️ src 디렉토리를 사용하는 경우라면 src 디렉토리의 어느 곳에서나 사용할 수 있다는 의미입니다.
+
+⚠️ Bootstrap 실습(외부 스타일 시트)
+- 부트 스트랩 설치:
+    ```js
+    npm install bootstrap@5.3.8
+    ```
+<br/>
+
+**5. 순서 지정 및 병합**
+<br/>
+
+- Next.js는 프로덕션 빌드 중에 스타일시트를 자동으로 청크(병합)하여 CSS를 최적화합니다.
+- CSS의 순서는 코드에서 스타일을 가져오는 순서에 따라 다릅니다.
+- 예를 들어, <BaseButton>이 page.module.css보다 먼저 import 되기 때문에 base-button.module.css가 page.module.css보다 먼저 요청됩니다.
+<br/>
+
+**6. Recommendations(권장 사항)**
+- ESLint의 sort-imports와 같이 import 순서를 자동 정렬하는 Lint나 포맷터를 비활성화 합니다.
+- CSS 분할(cssChunking) 방식을 제어하려면 next.config.js의 cssChunking 옵션을 사용합니다.
+
+<hr/>
+
 ## 25년 11월 12일 강의
 > 내용 정리
 
